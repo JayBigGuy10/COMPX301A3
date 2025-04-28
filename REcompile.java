@@ -50,6 +50,18 @@ public class REcompile {
         next2[s] = n2;
     }
 
+    // format self as a string state,char,next1,next2
+    public String toString() {
+        String returnString = "";
+        for (int i = 0; i < type.length; i++) {
+            if (type[i] == null && i > 1){
+                break;
+            }
+            returnString += i + ","+type[i]+","+next1[i]+","+next2[i]+"\n";
+        }
+        return returnString;        
+    }
+
 
     public REcompile(String pattern) {
         this.pattern = pattern.toCharArray();
@@ -184,46 +196,6 @@ public class REcompile {
         }
 
         return -1;
-    }
-
-    // Process
-
-    // State Zero is the start state of the entire machine and should branch to
-    // whichever state your compiler builds that is the actual start state (as used
-    // in lecture).
-
-    // Write to stout
-
-    /*
-     * each line of output describes one state and thus includes four things (i.e.
-     * four fields, comma separated):
-     * 
-     * the state-number,
-     * 
-     * the state type (i.e. either a single literal symbol to be matched, or the
-     * character pair BR as a branch-state indicator, or the character pair WC as a
-     * wildcard indicator—see below),
-     * 
-     * an integer indicating one possible next state,
-     * another integer indicating a possible next state.
-     * 
-     * state, type, next1, next2
-     */
-
-    public String toString() {
-
-        String returnString = "";
-
-        for (int i = 0; i < type.length; i++) {
-            if (type[i] == null && i > 1){
-                break;
-            }
-            returnString += i + ","+type[i]+","+next1[i]+","+next2[i]+"\n";
-        }
-
-        return returnString;
-
-        
     }
 
 }
