@@ -6,7 +6,7 @@ public class REcompile {
 
     public static void main(String[] argss) {
 
-        String[] args = { "a*b*" };
+        String[] args = { "(a*)|b" };
 
         // Read from stdin
         if (args.length != 1) {
@@ -79,6 +79,8 @@ public class REcompile {
         int r;
         r = term();
 
+        int termLast = state-1;
+
         if (r == -1)
             return -1;
 
@@ -89,27 +91,15 @@ public class REcompile {
             return r;
         }
 
-        if (inVocab(pattern[j]) || pattern[j] == '(') {
+        if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.') {
             // concatenation, starts building machine at the end of terms machine
-            expression();
+            int r2 = expression();
+            if (type[termLast].equals("BR")){
+                setstate(termLast, "BR", next1[termLast], r2);
+            } else {
+                setstate(termLast, type[termLast], r2, r2);
+            }
         }
-
-        // else if (pattern[j] == '|'){
-        // setstate(startState, "BR", r, state + 1);
-        // j++;
-
-        // r = startState;
-        // startState = state;
-
-        // state++;
-
-        // expression();
-
-        // setstate(startState, "BR", state, state);
-        // } else {
-        // // think this should instead be error
-        // setstate(startState, "BR", r, r);
-        // }
 
         return r;
 
@@ -169,9 +159,9 @@ public class REcompile {
         // Disjunction / Alternation
         if (pattern[j] == '|') {
             int f1 = f;
-            int f1last = state;
+            int f1last = state-1;
 
-            state++;
+            //state++;
             j++;
 
             f = state;
@@ -180,7 +170,13 @@ public class REcompile {
             int f2 = term();
 
             // redirect end of first machine
-            setstate(f1last, "BR", state, state);
+            //setstate(f1last, "BR", state, state);
+
+            if (type[f1last].equals("BR")){
+                setstate(f1last, "BR", next1[f1last], state);
+            } else {
+                setstate(f1last, type[f1last], state, state);
+            }
 
             setstate(f, "BR", f1, f2);
 
