@@ -6,7 +6,9 @@ import java.util.ArrayList;
  */
 public class REcompile {
 
-    public static void main(String[] args) {
+    public static void main(String[] argss) {
+
+        String[] args = {"a+b"};
 
         // Read from stdin
         if (args.length != 1) {
@@ -25,14 +27,14 @@ public class REcompile {
     char[] pattern;
 
     // Where we are in the regex pattern
-    int j;
+    int j = 0;
 
     // The compiled regex states
-    int state;
+    int state = 1;
     // WC - Wildcard, BR - branch
-    String[] type;
-    int[] next1;
-    int[] next2;
+    String[] type = new String[100];
+    int[] next1 = new int[100];
+    int[] next2 = new int[100];
 
     // Utility functions
 
@@ -53,6 +55,8 @@ public class REcompile {
         this.pattern = pattern.toCharArray();
 
         int r = expression();
+
+        setstate(0, "BR", r, r);
     }
 
     // returns start state of an entire machine / expression
@@ -60,13 +64,15 @@ public class REcompile {
         int r;
         r = term(); 
 
-        if (inVocab(pattern[j]) || pattern[j] == '(') {
-            // concatenation, starts building machine at the end of terms machine
-            expression();
-        } else if (pattern[j] == '\0') {
+        if (j == pattern.length) {
             // set final state of the machine indicating end of machine
             setstate(state, "!", -1, -1);
         }
+
+        else if (inVocab(pattern[j]) || pattern[j] == '(') {
+            // concatenation, starts building machine at the end of terms machine
+            expression();
+        } 
 
         // Handle alternation somewhere here?
 
@@ -78,8 +84,8 @@ public class REcompile {
     int term() {
         int f = factor();
 
-        // if (pattern[j] != '*' && pattern[j] != '+')
-        //     return f;
+        if (j == pattern.length)
+            return f;
 
         // Closure - Zero or More
         if (pattern[j] == '*') {
@@ -99,6 +105,8 @@ public class REcompile {
             // current state, branching machine indicator,
             setstate(state, "BR", f, state + 1);
 
+            setstate(state-1, type[state-1], state + 1, state + 1);
+
             state++;
             j++;
 
@@ -114,7 +122,7 @@ public class REcompile {
             state++;
             j++;
 
-            return state - 1;
+            return f;
         }
 
         return f;
@@ -194,9 +202,18 @@ public class REcompile {
 
     public String toString() {
 
-        String returnString = "Not done yet :P";
+        String returnString = "";
+
+        for (int i = 0; i < type.length; i++) {
+            if (type[i] == null && i > 1){
+                break;
+            }
+            returnString += i + ","+type[i]+","+next1[i]+","+next2[i]+"\n";
+        }
 
         return returnString;
+
+        
     }
 
 }
