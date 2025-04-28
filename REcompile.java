@@ -8,7 +8,7 @@ public class REcompile {
 
     public static void main(String[] argss) {
 
-        String[] args = {"a+b"};
+        String[] args = {"a*b*"};
 
         // Read from stdin
         if (args.length != 1) {
@@ -30,7 +30,7 @@ public class REcompile {
     int j = 0;
 
     // The compiled regex states
-    int state = 1;
+    int state = 0;
     // WC - Wildcard, BR - branch
     String[] type = new String[100];
     int[] next1 = new int[100];
@@ -55,12 +55,14 @@ public class REcompile {
         this.pattern = pattern.toCharArray();
 
         int r = expression();
-
-        setstate(0, "BR", r, r);
+ 
     }
 
     // returns start state of an entire machine / expression
     int expression() {
+        int startState = state;
+        state++;
+
         int r;
         r = term(); 
 
@@ -74,7 +76,12 @@ public class REcompile {
             expression();
         } 
 
-        // Handle alternation somewhere here?
+        else if (pattern[j] == '|'){
+            setstate(state, "BR", r, state+1);
+        }
+
+        // TODO, figure out how to tell when this is needed vs not
+        setstate(startState, "BR", r, r);
 
         return r;
 
@@ -84,44 +91,47 @@ public class REcompile {
     int term() {
         int f = factor();
 
+        // Handle end of pattern
         if (j == pattern.length)
             return f;
 
         // Closure - Zero or More
         if (pattern[j] == '*') {
-            // build a branching machine
-            // current state, branching machine indicator,
+            // branching machine, pointing at found factor f or next state after machine
             setstate(state, "BR", f, state + 1);
 
             state++;
             j++;
 
+            // Return branching machine as entrypoint
             return state - 1;
         }
 
         // Closure - Zero or One
         if (pattern[j] == '?') {
-            // build a branching machine
-            // current state, branching machine indicator,
+            // branching machine, pointing at found factor f or next state after machine
             setstate(state, "BR", f, state + 1);
 
+            // point the found factor at the exit instead of the branching machine
+            // is this correct??
             setstate(state-1, type[state-1], state + 1, state + 1);
 
             state++;
             j++;
 
+            // return branching machine as entrypoint
             return state - 1;
         }
 
         // Closure - One or More
         if (pattern[j] == '+') {
-            // build a branching machine
-            // current state, branching machine indicator,
+            // build a branching machine, pointing at found factor f or next state after machine
             setstate(state, "BR", f, state + 1);
 
             state++;
             j++;
 
+            // return the found factor as entrypoint
             return f;
         }
 
