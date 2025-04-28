@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 /**
  * Jayden Litolff
  * 1614273
@@ -8,7 +6,7 @@ public class REcompile {
 
     public static void main(String[] argss) {
 
-        String[] args = {"a*b*"};
+        String[] args = { "a*b*" };
 
         // Read from stdin
         if (args.length != 1) {
@@ -30,7 +28,7 @@ public class REcompile {
     int j = 0;
 
     // The compiled regex states
-    int state = 0;
+    int state = 1;
     // WC - Wildcard, BR - branch
     String[] type = new String[100];
     int[] next1 = new int[100];
@@ -38,7 +36,8 @@ public class REcompile {
 
     // Utility functions
 
-    // any symbol that does not have a special meaning (as given below) is a literal in the vocabulary that matches itself
+    // any symbol that does not have a special meaning (as given below) is a literal
+    // in the vocabulary that matches itself
     boolean inVocab(char c) {
         return -1 == ".*?+|()\\".indexOf(c);
     }
@@ -54,46 +53,63 @@ public class REcompile {
     public String toString() {
         String returnString = "";
         for (int i = 0; i < type.length; i++) {
-            if (type[i] == null && i > 1){
+            if (type[i] == null && i > 1) {
                 break;
             }
-            returnString += i + ","+type[i]+","+next1[i]+","+next2[i]+"\n";
+            returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
         }
-        return returnString;        
+        return returnString;
     }
-
 
     public REcompile(String pattern) {
         this.pattern = pattern.toCharArray();
 
         int r = expression();
- 
+
+        if (r == -1) {
+            System.out.println("Error");
+        }
+
+        setstate(0, "BR", r, r);
     }
 
     // returns start state of an entire machine / expression
     int expression() {
-        int startState = state;
-        state++;
 
         int r;
-        r = term(); 
+        r = term();
+
+        if (r == -1)
+            return -1;
 
         if (j == pattern.length) {
             // set final state of the machine indicating end of machine
-            setstate(state, "!", -1, -1);
+            setstate(state, "BR", -1, -1);
+
+            return r;
         }
 
-        else if (inVocab(pattern[j]) || pattern[j] == '(') {
+        if (inVocab(pattern[j]) || pattern[j] == '(') {
             // concatenation, starts building machine at the end of terms machine
             expression();
-        } 
-
-        else if (pattern[j] == '|'){
-            setstate(state, "BR", r, state+1);
         }
 
-        // TODO, figure out how to tell when this is needed vs not
-        setstate(startState, "BR", r, r);
+        // else if (pattern[j] == '|'){
+        // setstate(startState, "BR", r, state + 1);
+        // j++;
+
+        // r = startState;
+        // startState = state;
+
+        // state++;
+
+        // expression();
+
+        // setstate(startState, "BR", state, state);
+        // } else {
+        // // think this should instead be error
+        // setstate(startState, "BR", r, r);
+        // }
 
         return r;
 
@@ -102,6 +118,8 @@ public class REcompile {
     // returns start state of a machine, handles closure and alternation
     int term() {
         int f = factor();
+        if (f == -1)
+            return -1;
 
         // Handle end of pattern
         if (j == pattern.length)
@@ -126,7 +144,7 @@ public class REcompile {
 
             // point the found factor at the exit instead of the branching machine
             // is this correct??
-            setstate(state-1, type[state-1], state + 1, state + 1);
+            setstate(state - 1, type[state - 1], state + 1, state + 1);
 
             state++;
             j++;
@@ -137,7 +155,8 @@ public class REcompile {
 
         // Closure - One or More
         if (pattern[j] == '+') {
-            // build a branching machine, pointing at found factor f or next state after machine
+            // build a branching machine, pointing at found factor f or next state after
+            // machine
             setstate(state, "BR", f, state + 1);
 
             state++;
@@ -145,6 +164,27 @@ public class REcompile {
 
             // return the found factor as entrypoint
             return f;
+        }
+
+        // Disjunction / Alternation
+        if (pattern[j] == '|') {
+            int f1 = f;
+            int f1last = state;
+
+            state++;
+            j++;
+
+            f = state;
+
+            state++;
+            int f2 = term();
+
+            // redirect end of first machine
+            setstate(f1last, "BR", state, state);
+
+            setstate(f, "BR", f1, f2);
+
+            
         }
 
         return f;
@@ -156,7 +196,7 @@ public class REcompile {
         if (inVocab(pattern[j])) {
             // building a 2 state machine that matches char p[j]
             // 2 x state+1 as non branching
-            setstate(state, ""+pattern[j], state + 1, state + 1);
+            setstate(state, "" + pattern[j], state + 1, state + 1);
             // consume the character
             j++;
 
