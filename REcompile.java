@@ -6,7 +6,7 @@ public class REcompile {
 
     public static void main(String[] argss) {
 
-        String[] args = { "(a*)|b" };
+        String[] args = { "very\\**" };
 
         // Read from stdin
         if (args.length != 1) {
@@ -53,7 +53,7 @@ public class REcompile {
     public String toString() {
         String returnString = "";
         for (int i = 0; i < type.length; i++) {
-            if (type[i] == null && i > 1) {
+            if (type[i] == null && i > 10) {
                 break;
             }
             returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
@@ -91,7 +91,7 @@ public class REcompile {
             return r;
         }
 
-        if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.') {
+        if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.'|| pattern[j] == '\\') {
             // concatenation, starts building machine at the end of terms machine
             int r2 = expression();
             if (type[termLast].equals("BR")){
@@ -179,7 +179,6 @@ public class REcompile {
             }
 
             setstate(f, "BR", f1, f2);
-
             
         }
 
@@ -190,6 +189,20 @@ public class REcompile {
     int factor() {
 
         if (inVocab(pattern[j])) {
+            // building a 2 state machine that matches char p[j]
+            // 2 x state+1 as non branching
+            setstate(state, "" + pattern[j], state + 1, state + 1);
+            // consume the character
+            j++;
+
+            state++;
+
+            return state - 1;
+        }
+
+        // Escape character
+        if (pattern[j] == '\\') {
+            j++;
             // building a 2 state machine that matches char p[j]
             // 2 x state+1 as non branching
             setstate(state, "" + pattern[j], state + 1, state + 1);
