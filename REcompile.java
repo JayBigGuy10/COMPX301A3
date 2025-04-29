@@ -1,16 +1,17 @@
 /**
  * Jayden Litolff
  * 1614273
+ * Modified May 2025
+ * Built off of the week 7 lecture examples
  */
+
 public class REcompile {
 
-    public static void main(String[] argss) {
-
-        String[] args = { "v(" };
+    public static void main(String[] args) {
 
         // Read from stdin
         if (args.length != 1) {
-            System.out.println("Invalid Arguments: Usage REcompile 'Regex'");
+            System.out.println("Invalid Arguments: Usage java REcompile 'Regex'");
             return;
         }
 
@@ -29,40 +30,9 @@ public class REcompile {
 
     // The compiled regex states
     int state = 1;
-    // WC - Wildcard, BR - branch
     String[] type = new String[100];
     int[] next1 = new int[100];
     int[] next2 = new int[100];
-
-    // Utility functions
-
-    // any symbol that does not have a special meaning (as given below) is a literal
-    // in the vocabulary that matches itself
-    boolean inVocab(char c) {
-        return -1 == ".*?+|()\\".indexOf(c);
-    }
-
-    // set a state of the FSM being built
-    void setstate(int s, String c, int n1, int n2) {
-        type[s] = c;
-        next1[s] = n1;
-        next2[s] = n2;
-    }
-
-    // format self as a string state,char,next1,next2
-    public String toString() {
-        String returnString = "";
-        if (state == -1){
-            returnString += "Error: Invalid Regex Pattern";
-        } else {
-        for (int i = 0; i < type.length; i++) {
-            if (type[i] == null && i > 10) {
-                break;
-            }
-            returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
-        }}
-        return returnString;
-    }
 
     public REcompile(String pattern) {
         this.pattern = pattern.toCharArray();
@@ -77,34 +47,42 @@ public class REcompile {
         setstate(0, "BR", r, r);
     }
 
-    // returns start state of an entire machine / expression
+    /**
+     * Build an expression of terms
+     * Handles concatenation
+     * @return int the start state of an entire machine / expression
+     */
     int expression() {
-
-        int r;
-        r = term();
-
-        int termLast = state-1;
-
+        // Match a term
+        int r = term();
+        // Handle errors
         if (r == -1)
             return -1;
-
+        // Save the location of the terms end state
+        int termLast = state-1;
+        // Handle end of pattern
         if (j == pattern.length) {
             // set final state of the machine indicating end of machine
             setstate(state, "BR", -1, -1);
-
+            // return the start state of the expression
             return r;
         }
-
+        // Concatenation
         if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.'|| pattern[j] == '\\') {
-            // concatenation, starts building machine at the end of terms machine
+            // build a machine at the end of term r's machine
             int r2 = expression();
+            // Handle errors
             if (r2 == -1)
                 return -1;
+            // Point the final state of r's machine at the starting state of r2's machine
             if (type[termLast].equals("BR")){
+                // Final branching machines always use next2 as the pointer to move on
                 setstate(termLast, "BR", next1[termLast], r2);
             } else {
                 setstate(termLast, type[termLast], r2, r2);
             }
+        } else if (pattern[j] == ')'){
+            return r;
         } else {
             return -1;
         }
@@ -112,7 +90,11 @@ public class REcompile {
         return r;
     }
 
-    // returns start state of a machine, handles closure and alternation
+    /**
+     * Builds a term of factors
+     * handles all closure types and alternation
+     * @return int start state of a machine
+     */
     int term() {
         int f = factor();
         if (f == -1)
@@ -196,70 +178,108 @@ public class REcompile {
         return f;
     }
 
-    // Parsing and building = compiling the FSM that will do our pattern search
+    /**
+     * Builds a factor
+     * handles escape and wildcard chars
+     * @return int the start state of the factor
+     */
     int factor() {
 
-        // Handle end of pattern
+        // Can't match beyond end of pattern
         if (j == pattern.length)
             return -1;
 
+        // Literals
         if (inVocab(pattern[j])) {
-            // building a 2 state machine that matches char p[j]
-            // 2 x state+1 as non branching
+            // build the machine
             setstate(state, "" + pattern[j], state + 1, state + 1);
             // consume the character
             j++;
-
             state++;
-
+            // return location of the machine
             return state - 1;
         }
 
         // Escape character
         if (pattern[j] == '\\') {
+            //Consume the escape char
             j++;
-            // building a 2 state machine that matches char p[j]
-            // 2 x state+1 as non branching
+            // build the machine using the escaped character
             setstate(state, "" + pattern[j], state + 1, state + 1);
-            // consume the character
+            // consume the escaped character
             j++;
-
             state++;
-
+            // return location of the machine
             return state - 1;
         }
 
         // Wildcard matching any literal
         if (pattern[j] == '.') {
-            // Two state non branching machine matching wildcards
+            // build the wildcard machine
             setstate(state, "WC", state + 1, state + 1);
             // consume the character
             j++;
-
             state++;
-
+            // return the location of the machine
             return state - 1;
         }
 
         // Raise Precidence
-        if (pattern[j] == '(') {
-            // need to build an expression
-            int r;
-
+        if (pattern[j] == '(') {            
+            // Consume the '('
             j++;
-
-            r = expression(); // expression returns the start state of a fsm
-
+            // build an expression
+            int r = expression();
+            // Check that a closing ')' exists
             if (j == pattern.length || pattern[j] != ')')
-                return -1; // error
-
-            // consume closing bracket
+                return -1;
+            // Consume the ')'
             j++;
-
+            // return the start state of the expression
             return r;
         }
 
+        // No valid match, return error
         return -1;
+    }
+
+
+    // Utility functions
+
+    /**
+     * @param c char to determine if in vocab
+     * @return false for chars with special meaning, true for all others
+     */
+    boolean inVocab(char c) {
+        return -1 == ".*?+|()\\".indexOf(c);
+    }
+
+    /**
+     * set a state of the FSM being built
+     * @param s int state
+     * @param c string - single char or WC - Wildcard, BR - branch
+     * @param n1 int next1
+     * @param n2 int next2
+     */
+    void setstate(int s, String c, int n1, int n2) {
+        type[s] = c;
+        next1[s] = n1;
+        next2[s] = n2;
+    }
+
+    // format self as a string of state,char,next1,next2\n
+    public String toString() {
+        String returnString = "";
+        if (state == -1){
+            returnString += "Error: Invalid Regex Pattern";
+        } else {
+        for (int i = 0; i < type.length; i++) {
+            if (type[i] == null && i > 10) {
+                break;
+            }
+            returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
+        }}
+        return returnString;
     }
 
 }
