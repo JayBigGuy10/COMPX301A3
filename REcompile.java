@@ -291,7 +291,7 @@ public class REcompile {
             returnString += "Error: Invalid Regex Pattern";
         } else {
             for (int i = 0; i < type.length; i++) {
-                if (type[i] == null && i > 10) {
+                if (type[i] == null && i > 1) {
                     break;
                 }
                 returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
