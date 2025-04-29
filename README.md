@@ -5,3 +5,5 @@ COMPX301-25A - Assignment 3 - RE compiler and searcher
 
 Phrase Structure Rules
 - A** is invalid ( \ ** would have been broken by simple preprocessing, and we didn't want to overcomplicate)
+- \ is invalid, can't escape nothing
+- () cannot be empty
