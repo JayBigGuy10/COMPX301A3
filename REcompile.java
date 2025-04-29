@@ -6,7 +6,7 @@ public class REcompile {
 
     public static void main(String[] argss) {
 
-        String[] args = { "very\\**" };
+        String[] args = { "v(" };
 
         // Read from stdin
         if (args.length != 1) {
@@ -52,12 +52,15 @@ public class REcompile {
     // format self as a string state,char,next1,next2
     public String toString() {
         String returnString = "";
+        if (state == -1){
+            returnString += "Error: Invalid Regex Pattern";
+        } else {
         for (int i = 0; i < type.length; i++) {
             if (type[i] == null && i > 10) {
                 break;
             }
             returnString += i + "," + type[i] + "," + next1[i] + "," + next2[i] + "\n";
-        }
+        }}
         return returnString;
     }
 
@@ -67,7 +70,8 @@ public class REcompile {
         int r = expression();
 
         if (r == -1) {
-            System.out.println("Error");
+            state = -1;
+            return;
         }
 
         setstate(0, "BR", r, r);
@@ -94,15 +98,18 @@ public class REcompile {
         if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.'|| pattern[j] == '\\') {
             // concatenation, starts building machine at the end of terms machine
             int r2 = expression();
+            if (r2 == -1)
+                return -1;
             if (type[termLast].equals("BR")){
                 setstate(termLast, "BR", next1[termLast], r2);
             } else {
                 setstate(termLast, type[termLast], r2, r2);
             }
+        } else {
+            return -1;
         }
 
         return r;
-
     }
 
     // returns start state of a machine, handles closure and alternation
@@ -169,6 +176,10 @@ public class REcompile {
             state++;
             int f2 = term();
 
+            // Handle end of pattern
+            if (f2 == -1)
+                return -1;
+
             // redirect end of first machine
             //setstate(f1last, "BR", state, state);
 
@@ -187,6 +198,10 @@ public class REcompile {
 
     // Parsing and building = compiling the FSM that will do our pattern search
     int factor() {
+
+        // Handle end of pattern
+        if (j == pattern.length)
+            return -1;
 
         if (inVocab(pattern[j])) {
             // building a 2 state machine that matches char p[j]
@@ -235,7 +250,7 @@ public class REcompile {
 
             r = expression(); // expression returns the start state of a fsm
 
-            if (pattern[j] != ')')
+            if (j == pattern.length || pattern[j] != ')')
                 return -1; // error
 
             // consume closing bracket
