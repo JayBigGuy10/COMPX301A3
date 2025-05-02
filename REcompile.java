@@ -63,7 +63,6 @@ public class REcompile {
         // Handle errors in term
         if (r == 0)
             return 0;
-
         // Handle end of pattern
         if (j == pattern.length) {
             // set final state of the machine indicating end of machine
@@ -76,27 +75,34 @@ public class REcompile {
             // return the start state of the expression, negative to indicate ending at a ')'
             return -r;
         }
-        // Concatenation
-        if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.' || pattern[j] == '\\') {
-            // Save the location of the terms end state
-            int termLast = state - 1;
-            // build a machine at the end of term r's machine
+        // Alternation
+        if (pattern[j] == '|') {
+            // Store the start state
+            int r1 = r;
+            // Save the location of the first expressions end state
+            int r1last = state - 1;
+            // Consume the '|'
+            j++;
+            // store where the branch machine will be built
+            r = state;
+            state++;
+            // build another expression
             int r2 = expression();
-            // since r2 is not the original expression() call, negative (i.e. it finished at
-            // a ')') is just flipped to positive
+            //handle errors
+            if (r2 == 0)
+                 return 0;
+            //handle end at a ')'
             if (r2 < 0)
                 r2 = -r2;
-            // Handle errors
-            if (r2 == 0)
-                return 0;
-            // Point the final state of r's machine at the starting state of r2's machine
-            if (type[termLast].equals("BR")) {
-                // Final branching machines always use next2 as the pointer to move on
-                setstate(termLast, "BR", next1[termLast], r2);
+            // point the exit of both machines at the same place
+            if (type[r1last].equals("BR")) {
+                setstate(r1last, "BR", next1[r1last], state);
             } else {
-                setstate(termLast, type[termLast], r2, r2);
+                setstate(r1last, type[r1last], state, state);
             }
-            // return the start state of the expression
+            // build a branching machine
+            setstate(r, "BR", r1, r2);
+            // return the branching machine
             return r;
         }
         // Error, as not at end of expression, not at end of pattern and not in
@@ -157,30 +163,23 @@ public class REcompile {
             return f;
         }
 
-        // Disjunction / Alternation
-        if (pattern[j] == '|') {
-            // store the start and end of the machine before the disjunction
-            int f1 = f;
-            int f1last = state - 1;
-            // consume the '|'
-            j++;
-            // store where the branch machine will be assembled
-            f = state;
-            state++;
-            // make the machine after the disjunction character
+        // Concatenation
+        if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.' || pattern[j] == '\\') {
+            // Save the location of the current terms end state
+            int fLast = state - 1;
+            // build another term at the end of the current terms machine
             int f2 = term();
             // Handle errors
             if (f2 == 0)
                 return 0;
-            // redirect end of first machine
-            if (type[f1last].equals("BR")) {
-                setstate(f1last, "BR", next1[f1last], state);
+            // Point the final state of the current term at the starting state of the new term
+            if (type[fLast].equals("BR")) {
+                // Final branching machines always use next2 as the pointer to move on
+                setstate(fLast, "BR", next1[fLast], f2);
             } else {
-                setstate(f1last, type[f1last], state, state);
+                setstate(fLast, type[fLast], f2, f2);
             }
-            // setup branch machine into the f1 and f2
-            setstate(f, "BR", f1, f2);
-            // return the branch machine
+            // return the start state of the term
             return f;
         }
 
