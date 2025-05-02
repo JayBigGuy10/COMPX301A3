@@ -9,17 +9,19 @@ Phrase Structure Rules
 - () cannot be empty
 
 Expression
-E -> Term
-E -> Term | Term
-E -> Term | Expression
+E -> Term                   (Expression can be a term)       
+E -> Term (| Expression)*   (Expression can be a term in alternation with 0 or many more extra expressions)
+E -> Term (| Term)*         (As a result of the above 2 rules)            
 
 Term
-T -> Factor
-T -> Factor*
-T -> Factor+
-T -> Factor?
-T -> Factor Factor
+T -> Factor             (Term can be a factor)
+T -> Factor*            (Term can be a factor in closure)
+T -> Factor+            "                               "
+T -> Factor?            "                               "
+T -> Factor (Term)*     (Term can be a factor concatenated with 0 or more extra terms)
+T -> Factor (Factor)*   (As a result of the above rules)      
+
 
 Factor
-F -> vocab
-F -> (Expression)
+F -> vocab              (Factor can be a vocab item literal)
+F -> (Expression)       (Factor can be an expression in brackets with higher precidence)

@@ -49,6 +49,8 @@ public class REcompile {
         }
         // Point the entry state dummy at the expressions entrypoint
         setstate(0, "BR", r, r);
+        // set final state of the machine indicating end of machine
+        setstate(state, "BR", -1, -1);
     }
 
     /**
@@ -65,14 +67,13 @@ public class REcompile {
             return 0;
         // Handle end of pattern
         if (j == pattern.length) {
-            // set final state of the machine indicating end of machine
-            setstate(state, "BR", -1, -1);
             // return the start state of the expression
             return r;
         }
         // Handle end of expression
         if (pattern[j] == ')') {
-            // return the start state of the expression, negative to indicate ending at a ')'
+            // return the start state of the expression, negative to indicate ending at a
+            // ')'
             return -r;
         }
         // Alternation
@@ -88,22 +89,35 @@ public class REcompile {
             state++;
             // build another expression
             int r2 = expression();
-            //handle errors
+            // handle errors
             if (r2 == 0)
-                 return 0;
-            //handle end at a ')'
-            if (r2 < 0)
-                r2 = -r2;
+                return 0;
+
             // point the exit of both machines at the same place
-            if (type[r1last].equals("BR")) {
+            if (type[r1last].equals("BR") && next1[r1last] != next2[r1last]) {
                 setstate(r1last, "BR", next1[r1last], state);
             } else {
                 setstate(r1last, type[r1last], state, state);
             }
-            // build a branching machine
-            setstate(r, "BR", r1, r2);
-            // return the branching machine
-            return r;
+
+            // create a dummy state (unless it is already the end)
+            if (next1[r1last] != -1 && type[r1last].equals("BR") && next1[r1last] == next2[r1last]) {
+                setstate(state, "BR", state + 1, state + 1);
+                state++;
+            }
+
+            // handle end at a ')'
+            if (r2 < 0) {
+                // build a branching machine
+                setstate(r, "BR", r1, -r2);
+                // return the branching machine
+                return -r;
+            } else {
+                // build a branching machine
+                setstate(r, "BR", r1, r2);
+                // return the branching machine
+                return r;
+            }
         }
         // Error, as not at end of expression, not at end of pattern and not in
         // concatenation
@@ -136,11 +150,11 @@ public class REcompile {
             state++;
             j++;
             // Return branching machine as entrypoint
-            return state - 1;
+            f = state - 1;
         }
 
         // Closure - Zero or One
-        if (pattern[j] == '?') {
+        else if (pattern[j] == '?') {
             // branching machine, pointing at found factor f or next state after machine
             setstate(state, "BR", f, state + 1);
             // point the found factor at the exit instead of the branching machine
@@ -149,19 +163,21 @@ public class REcompile {
             state++;
             j++;
             // return branching machine as entrypoint
-            return state - 1;
+            f = state - 1;
         }
 
         // Closure - One or More
-        if (pattern[j] == '+') {
+        else if (pattern[j] == '+') {
             // branching machine, pointing at factor f or next state after machine
             setstate(state, "BR", f, state + 1);
             // consume char
             state++;
             j++;
-            // return the found factor as entrypoint
-            return f;
         }
+
+        // Handle end of pattern
+        if (j == pattern.length)
+            return f;
 
         // Concatenation
         if (inVocab(pattern[j]) || pattern[j] == '(' || pattern[j] == '.' || pattern[j] == '\\') {
@@ -172,15 +188,14 @@ public class REcompile {
             // Handle errors
             if (f2 == 0)
                 return 0;
-            // Point the final state of the current term at the starting state of the new term
-            if (type[fLast].equals("BR")) {
+            // Point the final state of the current term at the starting state of the new
+            // term
+            if (type[fLast].equals("BR") && next1[fLast] != next2[fLast]) {
                 // Final branching machines always use next2 as the pointer to move on
                 setstate(fLast, "BR", next1[fLast], f2);
             } else {
                 setstate(fLast, type[fLast], f2, f2);
             }
-            // return the start state of the term
-            return f;
         }
 
         return f;
@@ -287,7 +302,7 @@ public class REcompile {
     public String toString() {
         String returnString = "";
         if (state == -1) {
-            returnString += "Error: Invalid Regex Pattern";
+            returnString += "Error: Invalid Regex Pattern "+new String(pattern);
         } else {
             for (int i = 0; i < type.length; i++) {
                 if (type[i] == null && i > 1) {
