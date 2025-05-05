@@ -100,11 +100,9 @@ public class REcompile {
                 setstate(r1last, type[r1last], state, state);
             }
 
-            // create a dummy state (unless it is already the end)
-            if (next1[r1last] != -1 && type[r1last].equals("BR") && next1[r1last] == next2[r1last]) {
-                setstate(state, "BR", state + 1, state + 1);
-                state++;
-            }
+            // create a dummy state
+            setstate(state, "BR", state + 1, state + 1);
+            state++;
 
             // handle end at a ')'
             if (r2 < 0) {
@@ -164,6 +162,10 @@ public class REcompile {
             j++;
             // return branching machine as entrypoint
             f = state - 1;
+
+            // create a dummy state
+            setstate(state, "BR", state + 1, state + 1);
+            state++;
         }
 
         // Closure - One or More
