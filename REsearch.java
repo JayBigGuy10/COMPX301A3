@@ -86,15 +86,18 @@ public class REsearch {
 
             while (!currentStates.isEmpty()) {
                 int state = currentStates.removeFirst();
-                String type = stateType[state];
+                if (state == -1)
+                    return true; // Early accept
 
+                String type = stateType[state];
                 if (type.equals("BR")) {
-                    // Ensure both branches are explored
                     addState(nextStates, firstNextState[state]);
                     addState(nextStates, secondNextState[state]);
-                } else if (type.equals("WC") ||
-                        (type.length() == 1 && type.charAt(0) == c)) {
+                } else if (type.equals("WC") || type.charAt(0) == c) {
                     addState(nextStates, firstNextState[state]);
+                    if (firstNextState[state] != secondNextState[state]) {
+                        addState(nextStates, secondNextState[state]);
+                    }
                 }
             }
 
@@ -108,18 +111,18 @@ public class REsearch {
             nextStates.clear();
         }
 
-        // Check remaining epsilon transitions
+        // Check remaining states (epsilon transitions)
         while (!currentStates.isEmpty()) {
             int state = currentStates.removeFirst();
+            if (state == -1)
+                return true;
             if (stateType[state].equals("BR")) {
                 addState(nextStates, firstNextState[state]);
                 addState(nextStates, secondNextState[state]);
             }
-            if (nextStates.contains(-1))
-                return true;
         }
 
-        return false;
+        return nextStates.contains(-1);
     }
 
     private void addState(Deque<Integer> deque, int state) {
