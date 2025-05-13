@@ -5,7 +5,9 @@ import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 //Jack Unsworth
 //1614270
@@ -122,62 +124,53 @@ public class REsearch {
     private boolean checkPosition(String line, int startPos) {
         currentStates.clear();
         nextStates.clear();
-        // Initialize start states at position 0 (state 0 (dummy state) always branches to the start
-        // of the FSM)
+
         addState(currentStates, firstNextState[0]);
         addState(currentStates, secondNextState[0]);
-        // Process each character
+
+        // Resolve branching before continuing - Breaks branching otherwise.
+        resolveBranchingStates(currentStates);
+
+        //For each character starting at startPos.
         for (int i = startPos; i < line.length(); i++) {
             char c = line.charAt(i);
-            // Go through all states loaded in.
+            //While there are still current states
             while (!currentStates.isEmpty()) {
                 int state = currentStates.removeFirst();
-                // Check for accepting state to exit early.
+                //If state == -1 (acceptance), return.
                 if (state == -1)
                     return true;
-                // Extract the type from the stateType array.
+                //Skip invalid states.
+                if (state < 0 || state >= stateType.length || stateType[state] == null) {
+                    continue;
+                }   
+                //Gets the type
                 String type = stateType[state];
-                // If a branching state occurs
-                if (type.equals("BR")) {
-                    //Handle both paths (branching)
-                    //First path
+                //If type is a wildcard or matches this character
+                if (type.equals("WC") || type.charAt(0) == c) {
+                    //Add state
                     addState(nextStates, firstNextState[state]);
-                    //Second path.
-                    addState(nextStates, secondNextState[state]);
-                    // Else if a wildcard state occurs
-                } else if (type.equals("WC") || type.charAt(0) == c) {
-                    //Handle initial path for WC
-                    addState(nextStates, firstNextState[state]);
-                    //If two states are differing, we need to explore both paths.
+                    //If the first state and second state differ (special case), add second state.
                     if (firstNextState[state] != secondNextState[state]) {
                         addState(nextStates, secondNextState[state]);
                     }
                 }
             }
-            // Return true if found accepting state.
+            //Branching closure - To be careful.
+            resolveBranchingStates(nextStates); 
+            //If acceptance state is found, return
             if (nextStates.contains(-1))
                 return true;
-
-            // Swap deques for the next character.
+            //Swap current and next states to move on.
             Deque<Integer> temp = currentStates;
             currentStates = nextStates;
             nextStates = temp;
             nextStates.clear();
         }
 
-        // Check remaining states after processing all characters
-        while (!currentStates.isEmpty()) {
-            int state = currentStates.removeFirst();
-            if (state == -1)
-                return true;
-            // If a branching state still exists, handle it.
-            if (stateType[state].equals("BR")) {
-                addState(nextStates, firstNextState[state]);
-                addState(nextStates, secondNextState[state]);
-            }
-        }
-
-        return nextStates.contains(-1);
+        // Final branching closure after input consumed.
+        resolveBranchingStates(currentStates);
+        return currentStates.contains(-1);
     }
 
     /**
@@ -193,6 +186,43 @@ public class REsearch {
             // Add accepting states.
         } else if (state == -1) {
             deque.addLast(state);
+        }
+    }
+
+    /**
+     * Method to deal with branching states
+     * @param states the state passed in from the position check
+     */
+    private void resolveBranchingStates(Deque<Integer> states) {
+        //Keep track of pending states
+        Deque<Integer> pending = new ArrayDeque<>(states);
+        //Keep track of visisted states
+        Set<Integer> visited = new HashSet<>(states);
+        //While the pending list isn't empty
+        while (!pending.isEmpty()) {
+            //Remove state from the deque
+            int state = pending.removeFirst();
+            //Safety checking.
+            if (state == -1 || state < 0 || state >= stateType.length || stateType[state] == null)
+                continue;
+            //If stateType is a branch continue.
+            if (stateType[state].equals("BR")) {
+                //Get first and second next states.
+                int first = firstNextState[state];
+                int second = secondNextState[state];
+                // If the first next state has not been visited add it to the states.
+                if (visited.add(first)) {
+                    states.add(first);
+                    //Add to pending
+                    pending.add(first);
+                }
+                // If the second next state has not been visited add it to the states.
+                if (visited.add(second)) {
+                    states.add(second);
+                    //Add to pending
+                    pending.add(second);
+                }
+            }
         }
     }
 
