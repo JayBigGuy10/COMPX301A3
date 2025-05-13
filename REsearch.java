@@ -125,8 +125,7 @@ public class REsearch {
         currentStates.clear();
         nextStates.clear();
 
-        addState(currentStates, firstNextState[0]);
-        addState(currentStates, secondNextState[0]);
+        addState(currentStates, 0);
 
         // Resolve branching before continuing - Breaks branching otherwise.
         resolveBranchingStates(currentStates);
