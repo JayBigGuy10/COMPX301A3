@@ -2,9 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,9 +16,9 @@ public class REsearch {
     private String[] stateType;
     private int[] firstNextState;
     private int[] secondNextState;
-    // Deques to manage states for searches.
-    private Deque<Integer> currentStates = new ArrayDeque<>();
-    private Deque<Integer> nextStates = new ArrayDeque<>();
+    // Custom Deque
+    private CustomDeque currentStates = new CustomDeque();
+    private CustomDeque nextStates = new CustomDeque();
 
     // Entry point into program.
     public static void main(String[] args) {
@@ -162,7 +160,7 @@ public class REsearch {
             if (nextStates.contains(-1))
                 return true;
             // Swap current and next states to move on.
-            Deque<Integer> temp = currentStates;
+            CustomDeque temp = currentStates;
             currentStates = nextStates;
             nextStates = temp;
             nextStates.clear();
@@ -179,7 +177,7 @@ public class REsearch {
      * @param deque Deque to add to
      * @param state state to add to deque.
      */
-    private void addState(Deque<Integer> deque, int state) {
+    private void addState(CustomDeque deque, int state) {
         // If state exists and is unique, add.
         if (state != -1 && !deque.contains(state)) {
             deque.addLast(state);
@@ -194,11 +192,18 @@ public class REsearch {
      * 
      * @param states the state passed in from the position check
      */
-    private void resolveBranchingStates(Deque<Integer> states) {
+    private void resolveBranchingStates(CustomDeque states) {
         // Keep track of pending states
-        Deque<Integer> pending = new ArrayDeque<>(states);
+        CustomDeque pending = new CustomDeque();
         // Keep track of visisted states
-        Set<Integer> visited = new HashSet<>(states);
+        Set<Integer> visited = new HashSet<>();
+
+        // Initialize pending and visited with current states
+        for (int state : states) {
+            pending.addLast(state);
+            visited.add(state);
+        }
+
         // While the pending list isn't empty
         while (!pending.isEmpty()) {
             // Remove state from the deque
@@ -213,18 +218,130 @@ public class REsearch {
                 int second = secondNextState[state];
                 // If the first next state has not been visited add it to the states.
                 if (visited.add(first)) {
-                    states.add(first);
+                    states.addLast(first);
                     // Add to pending
-                    pending.add(first);
+                    pending.addLast(first);
                 }
                 // If the second next state has not been visited add it to the states.
                 if (visited.add(second)) {
-                    states.add(second);
+                    states.addLast(second);
                     // Add to pending
-                    pending.add(second);
+                    pending.addLast(second);
                 }
             }
         }
     }
 
+    // Custom deque - Forgot to implement beforehand.
+    // Implements iterable to deal with branching states loop.
+    public static class CustomDeque implements Iterable<Integer> {
+        private class Node {
+            // Intializing variables
+            int nodeValue;
+            Node next;
+            Node prev;
+
+            // Constructor setting value.
+            Node(int value) {
+                this.nodeValue = value;
+            }
+        }
+
+        // Initializing Variables
+        private final Node dummyNode;
+        private int size;
+
+        // Constructor for custom deque
+        public CustomDeque() {
+            // Creates empty deque.
+            dummyNode = new Node(0);
+            dummyNode.next = dummyNode;
+            dummyNode.prev = dummyNode;
+            size = 0;
+        }
+
+        // Method to add to the end of the deque.
+        public void addLast(int element) {
+            Node newNode = new Node(element);
+            // link newNode before dummyNode (end of list)
+            newNode.prev = dummyNode.prev;
+            // Link new node to the dummyNode (marks end of deque).
+            newNode.next = dummyNode;
+             // Connect the old last node and the new node.
+            dummyNode.prev.next = newNode;
+             // New node is placed at the end.
+            dummyNode.prev = newNode;
+            // Increment size.
+            size++;
+        }
+
+        // Method to remove from the front of the deque.
+        public int removeFirst() {
+            if (size == 0) {
+                throw new IllegalStateException("Deque is empty");
+            }
+            // First node goes next to dummyNode
+            Node firstNode = dummyNode.next;
+            //Store node value.
+            int nodeValue = firstNode.nodeValue;
+            //Bypass first node.
+            dummyNode.next = firstNode.next;
+            //Link the first node back to the dummyNode.next which removes the original first node.
+            firstNode.next.prev = dummyNode;
+            // Decrementing size of deque
+            size--;
+            //Returns node value.
+            return nodeValue;
+        }
+
+        // Checks if deque contains the element.
+        public boolean contains(int element) {
+            // Start from node next to dummy node
+            Node currentNode = dummyNode.next;
+            // While currentNode hasn't reached dummynode
+            while (currentNode != dummyNode) {
+                // Check for match/if it contains the element we're searching for
+                if (currentNode.nodeValue == element) {
+                    return true;
+                }
+                // Move on towards the next node
+                currentNode = currentNode.next;
+            }
+            // If it can't be found, return false.
+            return false;
+        }
+
+        // Resetting the custom deque.
+        public void clear() {
+            dummyNode.next = dummyNode;
+            dummyNode.prev = dummyNode;
+            size = 0;
+        }
+
+        // IsEmpty returns size 0.
+        public boolean isEmpty() {
+            return size == 0;
+        }
+
+        // Function to allow resolveBranchingStates to work.
+        public java.util.Iterator<Integer> iterator() {
+            return new java.util.Iterator<Integer>() {
+                // Start from the node next to the dummyNode to get all other nodes
+                private Node currentNode = dummyNode.next;
+
+                public boolean hasNext() {
+                    // Continues to loop until dummyNode is reached, where the iterator can exit
+                    return currentNode != dummyNode;
+                }
+
+                public Integer next() {
+                    // Store the current node value.
+                    int nodeValue = currentNode.nodeValue;
+                    // Move current node further along the deque
+                    currentNode = currentNode.next;
+                    return nodeValue;
+                }
+            };
+        }
+    }
 }
