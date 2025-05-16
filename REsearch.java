@@ -122,9 +122,9 @@ public class REsearch {
      * @return
      */
     private boolean checkPosition(String line, int startPos) {
+        //Intialize.
         currentStates.clear();
         nextStates.clear();
-
         addState(currentStates, 0);
 
         // Resolve branching before continuing - Breaks branching otherwise.
@@ -133,7 +133,7 @@ public class REsearch {
         // For each character starting at startPos.
         for (int i = startPos; i < line.length(); i++) {
             char c = line.charAt(i);
-            // While there are still current states
+            // While there are still current states.
             while (!currentStates.isEmpty()) {
                 int state = currentStates.removeFirst();
                 // If state == -1 (acceptance), return.
@@ -143,11 +143,11 @@ public class REsearch {
                 if (state < 0 || state >= stateType.length || stateType[state] == null) {
                     continue;
                 }
-                // Gets the type
+                // Gets the type.
                 String type = stateType[state];
-                // If type is a wildcard or matches this character
+                // If type is a wildcard or matches this character.
                 if (type.equals("WC") || type.charAt(0) == c) {
-                    // Add state
+                    // Add state.
                     addState(nextStates, firstNextState[state]);
                     // If the first state and second state differ (special case), add second state.
                     if (firstNextState[state] != secondNextState[state]) {
@@ -157,7 +157,7 @@ public class REsearch {
             }
             // Branching closure - To be careful.
             resolveBranchingStates(nextStates);
-            // If acceptance state is found, return
+            // If acceptance state is found, return.
             if (nextStates.contains(-1))
                 return true;
             // Swap current and next states to move on.

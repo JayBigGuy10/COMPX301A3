@@ -25,3 +25,5 @@ T -> Factor (Factor)*   (As a result of the above rules)
 Factor
 F -> vocab              (Factor can be a vocab item literal)
 F -> (Expression)       (Factor can be an expression in brackets with higher precidence)
+
+Note: Removed script.sh for testing, and the text files used to search through, imagine the marker will have their own.
