@@ -11,6 +11,7 @@ import java.util.Set;
 
 //Jack Unsworth
 //1614270
+//Last modified May
 
 public class REsearch {
     // Declaring Variables
@@ -122,7 +123,7 @@ public class REsearch {
      * @return
      */
     private boolean checkPosition(String line, int startPos) {
-        //Intialize.
+        // Intialize.
         currentStates.clear();
         nextStates.clear();
         addState(currentStates, 0);
