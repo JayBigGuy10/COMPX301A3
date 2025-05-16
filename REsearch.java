@@ -130,37 +130,37 @@ public class REsearch {
         // Resolve branching before continuing - Breaks branching otherwise.
         resolveBranchingStates(currentStates);
 
-        //For each character starting at startPos.
+        // For each character starting at startPos.
         for (int i = startPos; i < line.length(); i++) {
             char c = line.charAt(i);
-            //While there are still current states
+            // While there are still current states
             while (!currentStates.isEmpty()) {
                 int state = currentStates.removeFirst();
-                //If state == -1 (acceptance), return.
+                // If state == -1 (acceptance), return.
                 if (state == -1)
                     return true;
-                //Skip invalid states.
+                // Skip invalid states.
                 if (state < 0 || state >= stateType.length || stateType[state] == null) {
                     continue;
-                }   
-                //Gets the type
+                }
+                // Gets the type
                 String type = stateType[state];
-                //If type is a wildcard or matches this character
+                // If type is a wildcard or matches this character
                 if (type.equals("WC") || type.charAt(0) == c) {
-                    //Add state
+                    // Add state
                     addState(nextStates, firstNextState[state]);
-                    //If the first state and second state differ (special case), add second state.
+                    // If the first state and second state differ (special case), add second state.
                     if (firstNextState[state] != secondNextState[state]) {
                         addState(nextStates, secondNextState[state]);
                     }
                 }
             }
-            //Branching closure - To be careful.
-            resolveBranchingStates(nextStates); 
-            //If acceptance state is found, return
+            // Branching closure - To be careful.
+            resolveBranchingStates(nextStates);
+            // If acceptance state is found, return
             if (nextStates.contains(-1))
                 return true;
-            //Swap current and next states to move on.
+            // Swap current and next states to move on.
             Deque<Integer> temp = currentStates;
             currentStates = nextStates;
             nextStates = temp;
@@ -190,35 +190,36 @@ public class REsearch {
 
     /**
      * Method to deal with branching states
+     * 
      * @param states the state passed in from the position check
      */
     private void resolveBranchingStates(Deque<Integer> states) {
-        //Keep track of pending states
+        // Keep track of pending states
         Deque<Integer> pending = new ArrayDeque<>(states);
-        //Keep track of visisted states
+        // Keep track of visisted states
         Set<Integer> visited = new HashSet<>(states);
-        //While the pending list isn't empty
+        // While the pending list isn't empty
         while (!pending.isEmpty()) {
-            //Remove state from the deque
+            // Remove state from the deque
             int state = pending.removeFirst();
-            //Safety checking.
+            // Safety checking.
             if (state == -1 || state < 0 || state >= stateType.length || stateType[state] == null)
                 continue;
-            //If stateType is a branch continue.
+            // If stateType is a branch continue.
             if (stateType[state].equals("BR")) {
-                //Get first and second next states.
+                // Get first and second next states.
                 int first = firstNextState[state];
                 int second = secondNextState[state];
                 // If the first next state has not been visited add it to the states.
                 if (visited.add(first)) {
                     states.add(first);
-                    //Add to pending
+                    // Add to pending
                     pending.add(first);
                 }
                 // If the second next state has not been visited add it to the states.
                 if (visited.add(second)) {
                     states.add(second);
-                    //Add to pending
+                    // Add to pending
                     pending.add(second);
                 }
             }
